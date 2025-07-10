@@ -82,16 +82,18 @@ You've successfully run and modified your React Native App. :partying_face:
 - If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
 - If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
-# Troubleshooting
+# To run on iOS
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+  1. Clone the repo to your local machine
+  2. Install Ruby dependencies: `bundle install` in project root
+  3. Navigate to iOS folder: `cd ios`
+  4. Install CocoaPods dependencies: `bundle exec pod install`
+  5. Open the .xcworkspace file: `open LoopIn.xcworkspace`
+  6. In Xcode:
+    - Select your physical device from the device dropdown
+    - Update bundle identifier in the "Signing & Capabilities" tab
+    - Ensure your Apple ID is configured for development
+  7. Back in project root: `npm install`
+  8. Start Metro bundler: `npm start`
+  9. In a new terminal: `npm run ios --device`
+  10. Approve any trust prompts on your device
