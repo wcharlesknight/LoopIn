@@ -97,3 +97,9 @@ You've successfully run and modified your React Native App. :partying_face:
   8. Start Metro bundler: `npm start`
   9. In a new terminal: `npm run ios --device`
   10. Approve any trust prompts on your device
+
+  For charlie
+  Your Ruby environment is now properly set up. For future shell sessions, make sure rbenv is
+  initialized by running:
+  `export PATH="$HOME/.rbenv/bin:$PATH"`
+  `eval "$(rbenv init -)"`
