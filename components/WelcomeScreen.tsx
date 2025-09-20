@@ -37,7 +37,12 @@ const WelcomeScreen = () => {
         const userCredential = await auth().createUserWithEmailAndPassword(email, password);
         const userId = userCredential.user.uid;
 
-        // Create user profile in Firestore
+        // Update auth profile
+        await userCredential.user.updateProfile({
+          displayName: displayName.trim(),
+        });
+
+        // Create Firestore profile
         await firestore().collection('users').doc(userId).set({
           displayName: displayName.trim(),
           email: email,
@@ -45,17 +50,12 @@ const WelcomeScreen = () => {
           lastLoginAt: firestore.FieldValue.serverTimestamp(),
         });
 
-        // Update auth profile
-        await userCredential.user.updateProfile({
-          displayName: displayName.trim(),
-        });
-
         Alert.alert('Success', 'Account created successfully!');
       } else {
-        // Sign in and update last login
+        // Sign in
         const userCredential = await auth().signInWithEmailAndPassword(email, password);
         
-        // Update last login time in Firestore
+        // Update last login timestamp
         await firestore().collection('users').doc(userCredential.user.uid).update({
           lastLoginAt: firestore.FieldValue.serverTimestamp(),
         });

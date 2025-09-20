@@ -30,9 +30,26 @@ function App(): React.JSX.Element {
       const userDoc = await firestore().collection('users').doc(userId).get();
       if (userDoc.exists()) {
         setUserProfile(userDoc.data() as UserProfile);
+      } else {
+        // Create profile if it doesn't exist
+        const profileData = {
+          displayName: user?.displayName || '',
+          email: user?.email || '',
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          lastLoginAt: firestore.FieldValue.serverTimestamp(),
+        };
+        await firestore().collection('users').doc(userId).set(profileData);
+        setUserProfile(profileData as UserProfile);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // Fallback to Firebase Auth data on Firestore error
+      setUserProfile({
+        displayName: user?.displayName || '',
+        email: user?.email || '',
+        createdAt: null,
+        lastLoginAt: null
+      });
     } finally {
       setProfileLoading(false);
     }
