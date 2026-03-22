@@ -3,6 +3,7 @@ import {View, Text, StyleSheet} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
+import {UserProfileProvider} from '../context/UserProfileContext';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
 
@@ -31,7 +32,13 @@ export default function RootNavigator() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        {user ? <AppStack /> : <AuthStack />}
+        {user ? (
+          <UserProfileProvider uid={user.uid}>
+            <AppStack />
+          </UserProfileProvider>
+        ) : (
+          <AuthStack />
+        )}
       </NavigationContainer>
     </SafeAreaProvider>
   );

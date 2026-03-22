@@ -1,10 +1,8 @@
-import {FirebaseFirestoreTypes} from '@react-native-firebase/firestore';
-
 export interface UserProfile {
   displayName: string;
   email: string;
-  createdAt: FirebaseFirestoreTypes.Timestamp;
-  lastLoginAt: FirebaseFirestoreTypes.Timestamp;
+  createdAt: number;
+  lastLoginAt: number;
   location?: {
     cityId: string;
     cityName: string;
@@ -12,7 +10,7 @@ export interface UserProfile {
     country: string;
     latitude: number;
     longitude: number;
-    savedAt: FirebaseFirestoreTypes.Timestamp;
+    savedAt: number;
   };
   hasCompletedOnboarding: boolean;
 }

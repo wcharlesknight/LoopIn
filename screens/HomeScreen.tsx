@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import {UserProfile} from '../types';
+import {useUserProfile} from '../context/UserProfileContext';
 import {AppStackParamList} from '../navigation/AppStack';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -21,32 +20,8 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const {userProfile} = useUserProfile();
   const user = auth().currentUser;
-
-  useEffect(() => {
-    if (user) {
-      setProfileLoading(true);
-      const unsubscribe = firestore()
-        .collection('users')
-        .doc(user.uid)
-        .onSnapshot(
-          doc => {
-            const data = doc.data();
-            if (data) {
-              setUserProfile(data as UserProfile);
-            }
-            setProfileLoading(false);
-          },
-          error => {
-            console.error('Error fetching user profile:', error);
-            setProfileLoading(false);
-          },
-        );
-      return unsubscribe;
-    }
-  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -87,19 +62,15 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {profileLoading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading profile...</Text>
-            </View>
-          ) : (
-            <View style={styles.userInfoContainer}>
-              <Text style={styles.infoTitle}>Info:</Text>
-              <Text style={styles.infoText}>Email: {user?.email}</Text>
-              {userProfile && ( <Text style={styles.infoText}>
-                    Display Name: {userProfile.displayName}
-                  </Text>)}
-            </View>
-          )}
+          <View style={styles.userInfoContainer}>
+            <Text style={styles.infoTitle}>Info:</Text>
+            <Text style={styles.infoText}>Email: {user?.email}</Text>
+            {userProfile && (
+              <Text style={styles.infoText}>
+                Display Name: {userProfile.displayName}
+              </Text>
+            )}
+          </View>
         </View>
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -164,14 +135,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
   userInfoContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -193,7 +156,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   signOutButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#007AFF',
     marginHorizontal: 32,
     marginBottom: 50,
     borderRadius: 8,

@@ -50,6 +50,9 @@ export default function LocationPickerScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to Gatherus!</Text>
         <Text style={styles.subtitle}>Where are you located?</Text>
@@ -123,6 +126,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFF',
+  },
+  backButton: {
+    paddingTop: 56,
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
   },
   content: {
     flex: 1,
