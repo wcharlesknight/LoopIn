@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import {registerUser, syncLogin} from '../api/auth';
 
 const WelcomeScreen = () => {
   const [email, setEmail] = useState('');
@@ -31,16 +31,15 @@ const WelcomeScreen = () => {
       return;
     }
 
-    // Validate password strength for sign-up
     if (isSignUp && password.length < 6) {
       Alert.alert(
         'Weak Password',
         'Password must be at least 6 characters long.\n\n' +
-        'For a strong password, use:\n' +
-        '• At least 8 characters\n' +
-        '• Mix of uppercase and lowercase letters\n' +
-        '• Include numbers\n' +
-        '• Add special characters (!@#$%^&*)'
+          'For a strong password, use:\n' +
+          '• At least 8 characters\n' +
+          '• Mix of uppercase and lowercase letters\n' +
+          '• Include numbers\n' +
+          '• Add special characters (!@#$%^&*)',
       );
       return;
     }
@@ -48,71 +47,54 @@ const WelcomeScreen = () => {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        // Create auth account
-        const userCredential = await auth().createUserWithEmailAndPassword(email, password);
-        const userId = userCredential.user.uid;
-
-        // Update auth profile
-        await userCredential.user.updateProfile({
-          displayName: displayName.trim(),
-        });
-
-        // Create Firestore profile
-        await firestore().collection('users').doc(userId).set({
-          displayName: displayName.trim(),
-          email: email,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          lastLoginAt: firestore.FieldValue.serverTimestamp(),
-          hasCompletedOnboarding: false,
-        });
-
+        const customToken = await registerUser(
+          email,
+          password,
+          displayName.trim(),
+        );
+        await auth().signInWithCustomToken(customToken);
         Alert.alert('Success', 'Account created successfully!');
       } else {
-        // Sign in
-        const userCredential = await auth().signInWithEmailAndPassword(email, password);
+        let idToken: string;
+        try {
+          const userCredential = await auth().signInWithEmailAndPassword(
+            email,
+            password,
+          );
+          idToken = await userCredential.user.getIdToken();
+        } catch (error: any) {
+          let errorMessage = error.message;
+          if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Please enter a valid email address.';
+          } else if (error.code === 'auth/user-not-found') {
+            errorMessage =
+              'No account found with this email. Please sign up first.';
+          } else if (
+            error.code === 'auth/wrong-password' ||
+            error.code === 'auth/invalid-credential'
+          ) {
+            errorMessage =
+              "Invalid email or password.\n\nPlease check:\n• Email is spelled correctly\n• Password is correct\n• Account exists (try signing up if you haven't)";
+          }
+          Alert.alert('Error', errorMessage);
+          return;
+        }
 
-        // Update last login timestamp
-        await firestore().collection('users').doc(userCredential.user.uid).update({
-          lastLoginAt: firestore.FieldValue.serverTimestamp(),
-        });
-
+        syncLogin(idToken);
         Alert.alert('Success', 'Signed in successfully!');
       }
     } catch (error: any) {
-      console.log(error, "error")
-
-      // Handle specific Firebase auth errors with user-friendly messages
-      let errorMessage = error.message;
-
-      if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak.\n\n' +
-          'Please use a stronger password:\n' +
-          '• At least 6 characters (8+ recommended)\n' +
-          '• Mix of uppercase and lowercase\n' +
-          '• Include numbers and special characters';
-      } else if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'This email is already registered. Please sign in or use a different email.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address.';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email. Please sign up first.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password. Please try again.';
-      } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Invalid email or password.\n\n' +
-          'Please check:\n' +
-          '• Email is spelled correctly\n' +
-          '• Password is correct\n' +
-          '• Account exists (try signing up if you haven\'t)';
+      let errorMessage = error.message || 'Something went wrong. Please try again.';
+      if (error.message === 'EMAIL_ALREADY_EXISTS') {
+        errorMessage =
+          'This email is already registered. Please sign in or use a different email.';
       }
-
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Show mission statement first
   if (!showAuthForm) {
     return (
       <View style={styles.container}>
@@ -132,8 +114,7 @@ const WelcomeScreen = () => {
           <TouchableOpacity
             style={styles.getStartedButton}
             onPress={() => setShowAuthForm(true)}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Text style={styles.getStartedButtonText}>Get Started</Text>
           </TouchableOpacity>
         </View>
@@ -141,12 +122,10 @@ const WelcomeScreen = () => {
     );
   }
 
-  // Show auth form after "Get Started" is clicked
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to Gatherus</Text>
         <Text style={styles.subtitle}>
@@ -186,29 +165,25 @@ const WelcomeScreen = () => {
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
           onPress={handleAuth}
-          disabled={isLoading}
-        >
+          disabled={isLoading}>
           <Text style={styles.buttonText}>
-            {isLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            {isLoading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Sign In'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.switchButton}
-          onPress={() => setIsSignUp(!isSignUp)}
-        >
+          onPress={() => setIsSignUp(!isSignUp)}>
           <Text style={styles.switchText}>
             {isSignUp
               ? 'Already have an account? Sign In'
-              : 'Need an account? Sign Up'
-            }
+              : 'Need an account? Sign Up'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setShowAuthForm(false)}
-        >
+          onPress={() => setShowAuthForm(false)}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
       </View>
@@ -221,7 +196,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  // Landing page styles
   landingContent: {
     flex: 1,
     justifyContent: 'space-between',
@@ -236,7 +210,7 @@ const styles = StyleSheet.create({
     marginTop: 40,
     letterSpacing: 2,
     textShadowColor: 'rgba(0, 122, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 4 },
+    textShadowOffset: {width: 0, height: 4},
     textShadowRadius: 8,
   },
   missionContainer: {
@@ -264,10 +238,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -277,7 +248,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  // Auth form styles
   content: {
     flex: 1,
     justifyContent: 'center',

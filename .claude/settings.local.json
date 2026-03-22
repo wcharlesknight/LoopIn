@@ -1,3 +1,6 @@
 {
-  "enableAllProjectMcpServers": false
+  "enableAllProjectMcpServers": false,
+  "files.exclude": {                                                                               
+      "node_modules": true
+    }   
 }
