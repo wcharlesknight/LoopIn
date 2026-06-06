@@ -23,6 +23,6 @@ export const CITIES: City[] = [
     country: 'USA',
     latitude: 47.2414,
     longitude: -122.4594,
-  }
+  },
   // Add more cities here as needed
 ];

@@ -12,7 +12,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {CITIES, City} from '../constants/cities';
-import {saveUserLocation} from '../utils/saveUserLocation';
+import {updateLocation} from '../api/user';
 import {AppStackParamList} from '../navigation/AppStack';
 
 type LocationPickerNavigationProp = NativeStackNavigationProp<
@@ -27,14 +27,9 @@ export default function LocationPickerScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleContinue = async () => {
-    if (!selectedCity) {
-      Alert.alert('Error', 'Please select a city');
-      return;
-    }
-
     setLoading(true);
     try {
-      await saveUserLocation(selectedCity);
+      await updateLocation(selectedCity.id);
       // Navigate to Home after saving
       navigation.navigate('Home');
     } catch (error: any) {
@@ -64,7 +59,7 @@ export default function LocationPickerScreen() {
             onPress={() => setModalVisible(true)}
             disabled={loading}>
             <Text style={styles.dropdownText}>
-              {selectedCity ? `${selectedCity.name}, ${selectedCity.state}` : 'Select a city'}
+              {selectedCity.name}, {selectedCity.state}
             </Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
@@ -102,13 +97,13 @@ export default function LocationPickerScreen() {
                 <TouchableOpacity
                   style={[
                     styles.cityItem,
-                    selectedCity?.id === item.id && styles.cityItemSelected,
+                    selectedCity.id === item.id && styles.cityItemSelected,
                   ]}
                   onPress={() => handleCitySelect(item)}>
                   <Text
                     style={[
                       styles.cityItemText,
-                      selectedCity?.id === item.id && styles.cityItemTextSelected,
+                      selectedCity.id === item.id && styles.cityItemTextSelected,
                     ]}>
                     {item.name}, {item.state}
                   </Text>
