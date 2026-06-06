@@ -20,10 +20,11 @@ target 'LoopIn' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # Firebase pods - minimal setup (Auth + Firestore only)
+  # Firebase pods
   pod 'Firebase/Core', :modular_headers => true
   pod 'Firebase/Auth', :modular_headers => true
   pod 'Firebase/Firestore', :modular_headers => true
+  pod 'Firebase/Messaging', :modular_headers => true
 
   post_install do |installer|
     # Standard React Native post install

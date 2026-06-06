@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useState} from 'react';
 import firestore from '@react-native-firebase/firestore';
 import {ensureProfile} from '../api/user';
 import {UserProfile} from '../types';
+import {useFcmToken} from '../hooks/useFcmToken';
 
 interface UserProfileContextType {
   userProfile: UserProfile | null;
@@ -26,6 +27,8 @@ export function UserProfileProvider({uid, children}: Props) {
   useEffect(() => {
     ensureProfile();
   }, [uid]);
+
+  useFcmToken(uid);
 
   // Single Firestore listener for this session
   useEffect(() => {
