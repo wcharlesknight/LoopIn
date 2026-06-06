@@ -1,4 +1,3 @@
-import auth from '@react-native-firebase/auth';
 import {BACKEND_URL} from '../constants/api';
 
 export async function registerUser(

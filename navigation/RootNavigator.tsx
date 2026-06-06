@@ -11,13 +11,11 @@ export default function RootNavigator() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
 
-  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
-    setUser(user);
-    if (initializing) setInitializing(false);
-  }
-
   useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+    const subscriber = auth().onAuthStateChanged(authUser => {
+      setUser(authUser);
+      setInitializing(false);
+    });
     return subscriber;
   }, []);
 
