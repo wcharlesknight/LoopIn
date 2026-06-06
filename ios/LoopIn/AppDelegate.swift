@@ -3,6 +3,8 @@ import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import FirebaseCore
+import FirebaseMessaging
+import UserNotifications
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,9 +17,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    // Initialize Firebase
     FirebaseApp.configure()
-    
+    UNUserNotificationCenter.current().delegate = self
+    Messaging.messaging().delegate = self
+
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -33,9 +36,60 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       launchOptions: launchOptions
     )
 
+    // Let the React Native engine thread breathe for a millisecond before requesting alerts
+    DispatchQueue.main.async {
+      self.registerForPushNotifications(application: application)
+    }
+
     return true
   }
+
+  // FIXED: Moved this method INSIDE the AppDelegate class scope
+  func registerForPushNotifications(application: UIApplication) {
+    let center = UNUserNotificationCenter.current()
+    center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+      guard granted else { return }
+      
+      DispatchQueue.main.async {
+        application.registerForRemoteNotifications()
+      }
+    }
+  }
+} // <-- End of AppDelegate Class
+
+// --- EXTENSIONS ---
+
+extension AppDelegate {
+  // Swizzling doesn't reliably fire on Swift AppDelegates — forward the APNS token manually.
+  func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    // Explicitly set token type to sandbox for local development builds
+    #if DEBUG
+      Messaging.messaging().setAPNSToken(deviceToken, type: .sandbox)
+    #else
+      Messaging.messaging().setAPNSToken(deviceToken, type: .prod)
+    #endif
+  }
 }
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+  // Show notification banner + play sound when app is in the foreground
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    // Fixed: Stripped extra array brackets to match clean Swift OptionSet syntax
+    completionHandler([.banner, .sound])
+  }
+}
+
+extension AppDelegate: MessagingDelegate {
+  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+    print("Firebase registration token: \(String(describing: fcmToken))")
+  }
+}
+
+// --- REACT NATIVE FACTORY DELEGATE ---
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {
