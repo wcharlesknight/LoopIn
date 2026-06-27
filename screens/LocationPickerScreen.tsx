@@ -13,6 +13,7 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {CITIES, City} from '../constants/cities';
 import {updateLocation} from '../api/user';
+import {useUserProfile} from '../context/UserProfileContext';
 import {AppStackParamList} from '../navigation/AppStack';
 
 type LocationPickerNavigationProp = NativeStackNavigationProp<
@@ -22,7 +23,13 @@ type LocationPickerNavigationProp = NativeStackNavigationProp<
 
 export default function LocationPickerScreen() {
   const navigation = useNavigation<LocationPickerNavigationProp>();
-  const [selectedCity, setSelectedCity] = useState<City>(CITIES[0]);
+  const {userProfile} = useUserProfile();
+  const savedCity = CITIES.find(
+    city => city.id === userProfile?.location?.cityId,
+  );
+  const [selectedCity, setSelectedCity] = useState<City>(
+    savedCity ?? CITIES[0],
+  );
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -197,8 +204,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
     maxHeight: '50%',
   },
   modalHeader: {

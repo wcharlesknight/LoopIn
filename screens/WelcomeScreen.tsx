@@ -11,6 +11,13 @@ import {
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import {registerUser, syncLogin} from '../api/auth';
+import {
+  signInWithProvider,
+  SocialProvider,
+  SocialSignInCancelled,
+  AccountExistsWithDifferentCredentialError,
+} from '../api/socialAuth';
+import SocialButton from '../components/SocialButton';
 
 const WelcomeScreen = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +26,37 @@ const WelcomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const [socialProvider, setSocialProvider] = useState<SocialProvider | null>(
+    null,
+  );
+
+  const handleSocial = async (provider: SocialProvider) => {
+    setSocialProvider(provider);
+    try {
+      const user = await signInWithProvider(provider);
+      // Sync with the backend so the Firestore profile is provisioned (new users) or
+      // touched (returning users). Navigation is handled by onAuthStateChanged.
+      const idToken = await user.getIdToken();
+      syncLogin(idToken);
+    } catch (error) {
+      if (error instanceof SocialSignInCancelled) {
+        return; // user backed out — not an error
+      }
+      if (error instanceof AccountExistsWithDifferentCredentialError) {
+        const method = error.existingMethods[0] ?? 'a different method';
+        Alert.alert(
+          'Account already exists',
+          `You already signed up using ${method}. Please sign in with that method first, then link this provider from settings.`,
+        );
+        return;
+      }
+      console.error(`[${provider}] Sign-in error:`, error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      Alert.alert('Error', `Sign-in failed: ${errorMsg}`);
+    } finally {
+      setSocialProvider(null);
+    }
+  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -131,6 +169,35 @@ const WelcomeScreen = () => {
         <Text style={styles.subtitle}>
           {isSignUp ? 'Create your account' : 'Sign in to continue'}
         </Text>
+
+        <View style={styles.socialContainer}>
+          <SocialButton
+            label="Sign in with Google"
+            badge="G"
+            backgroundColor="#ffffff"
+            textColor="#3c4043"
+            badgeColor="#4285F4"
+            bordered
+            onPress={() => handleSocial('google')}
+            loading={socialProvider === 'google'}
+            disabled={socialProvider !== null || isLoading}
+          />
+          <SocialButton
+            label="Sign in with Apple"
+            badge=""
+            backgroundColor="#000000"
+            textColor="#ffffff"
+            onPress={() => handleSocial('apple')}
+            loading={socialProvider === 'apple'}
+            disabled={socialProvider !== null || isLoading}
+          />
+        </View>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or use email</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         <View style={styles.inputContainer}>
           {isSignUp && (
@@ -265,6 +332,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 40,
     color: '#666',
+  },
+  socialContainer: {
+    marginBottom: 8,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#999',
+    fontSize: 14,
   },
   inputContainer: {
     marginBottom: 32,
